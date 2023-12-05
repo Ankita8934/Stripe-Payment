@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:th="http://www.w3.org/1999/xhtml"
+      layout:decorator="layout/layout">
+
+<head>
+    <title>Layout</title>
+</head>
+<body class="bg-light pt-5">
+
+<!--hero section-->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div layout:fragment="content">
+                <h3>Welcome everyone, we are learning stripe payment</h3>
+            </div>
+
+            <p class="my-5">
+                <a href="/index" class="btn btn-primary">
+                    <i class="fas fa-user-plus ml-2"></i>
+                    welcome in stripe payment
+                </a>
+            </p>
+
+
+
+            <p class="mt-5 text-muted" >
+                    <small>Project by  <a th:href="@{https://github.com/Ankita8934}" target="_blank">Ankita Singh</a>.</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

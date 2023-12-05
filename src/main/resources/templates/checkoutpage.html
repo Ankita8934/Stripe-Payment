@@ -1,0 +1,48 @@
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Accept a card payment</title>
+    <meta name="description" content="A demo of a card payment on Stripe" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="global.css" />
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?version=3.52.1&features=fetch"></script>
+    <script th:inline="javascript">
+
+        /*<![CDATA[*/
+
+        var stripePublicKey = /*[[${stripePublicKey}]]*/ null;
+        var amount = /*[[${amount}]]*/ null;
+        var email = /*[[${email}]]*/ null;
+        var featureRequest = /*[[${featureRequest}]]*/ null;
+
+        /*]]>*/
+    </script>
+    <script src="client.js" defer></script>
+</head>
+
+<body>
+<!-- Display a payment form -->
+<div class="container">
+    <div class="form-card">
+        <form id="payment-form">
+            <p><b>Credit card details to complete payment</b></p>
+            <p>Press the pay now button to complete your payment of <span th:text="${amount}"></span>USD.</p>
+            <div id="card-element" class="form-control"><!--Stripe.js injects the Card Element--></div>
+            <button id="submit" class="btn btn-primary">
+                <div class="spinner hidden" id="spinner"></div>
+                <span id="button-text">Pay now</span>
+            </button>
+            <p id="card-error" role="alert"></p>
+            <p class="result-message hidden">
+                Payment succeeded, see the result in your
+                <a href="" target="_blank">Stripe dashboard.</a> Refresh the page to pay again.
+            </p>
+        </form>
+
+    </div>
+
+</div>
+</body>
+</html>
