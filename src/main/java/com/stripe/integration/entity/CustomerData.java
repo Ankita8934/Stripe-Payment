@@ -2,8 +2,7 @@ package com.stripe.integration.entity;
 
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Entity
 @Data
@@ -12,6 +11,7 @@ public class CustomerData {
     public String name;
     public String email;
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     public String customerId;
 
     public String source;

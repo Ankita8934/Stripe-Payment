@@ -1,16 +1,14 @@
 package com.stripe.integration.service;
 
-import ch.qos.logback.classic.Logger;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
-import com.stripe.integration.dto.StripeChargeDto;
-import com.stripe.integration.dto.StripeSubscriptionDto;
-import com.stripe.integration.dto.StripeSubscriptionResponse;
-import com.stripe.integration.dto.StripeTokenDto;
+import com.stripe.integration.dto.*;
 import com.stripe.integration.entity.CustomerData;
 import com.stripe.integration.repository.CustomerRepo;
+import com.stripe.integration.repository.ProductRepo;
 import com.stripe.model.*;
-import com.stripe.param.TokenCreateParams;
+import com.stripe.param.PriceCreateParams;
+import com.stripe.param.ProductCreateParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,17 +23,21 @@ import java.util.Map;
 @Service
 public class StripeService {
 
+
     @Value("${stripe.key.secret}")
-    private String API_SECET_KEY;
+    private static String stripeKey;
 
     @Autowired
     CustomerRepo customerRepo;
+
+    @Autowired
+    ProductRepo productRepo;
 
     private Stripe stripe;
 
     @PostConstruct
     public void init() {
-        stripe.apiKey = API_SECET_KEY;
+        stripe.apiKey = stripeKey;
     }
 
     public CustomerData createCustomer(CustomerData customer) {
@@ -43,7 +45,7 @@ public class StripeService {
     }
 
     public StripeTokenDto createCardToken(StripeTokenDto model) {
-
+        Stripe.apiKey = stripeKey;
         try {
             Map<String, Object> card = new HashMap<>();
             card.put("number", model.getCardNumber());
@@ -181,6 +183,48 @@ public class StripeService {
         return null;
     }
 
+        public Product createProduct(ProductData productData) throws StripeException{
+
+            ProductCreateParams params =
+                    ProductCreateParams.builder()
+                            .setName(productData.getProductName())
+                            .build();
+            Product product = Product.create(params);
+            return product;
+        }
 
 
-}
+    public  Price  createPrice(PriceData priceData) throws StripeException {
+        PriceCreateParams params =
+                PriceCreateParams.builder()
+                        .setProduct(priceData.getProductId())
+                        .setUnitAmount(priceData.getUnitAmount())
+                        .setCurrency(priceData.getCurrency())
+                        .setRecurring(
+                                PriceCreateParams.Recurring.builder()
+                                        .setInterval(PriceCreateParams.Recurring.Interval.MONTH)
+                                        .build()
+                        )
+                        .build();
+
+        Price price = Price.create(params);
+        return price;
+    }
+    public  Price  createPriceYearly(PriceData priceData) throws StripeException {
+        PriceCreateParams params =
+                PriceCreateParams.builder()
+                        .setProduct(priceData.getProductId())
+                        .setUnitAmount(priceData.getUnitAmount())
+                        .setCurrency(priceData.getCurrency())
+                        .setRecurring(
+                                PriceCreateParams.Recurring.builder()
+                                        .setInterval(PriceCreateParams.Recurring.Interval.YEAR)
+                                        .build()
+                        )
+                        .build();
+
+        Price price = Price.create(params);
+        return price;
+    }
+
+    }

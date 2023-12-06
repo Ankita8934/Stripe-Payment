@@ -1,25 +1,14 @@
 package com.stripe.integration.controller;
 
 
-import ch.qos.logback.classic.util.LogbackMDCAdapter;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.integration.dto.*;
-import com.stripe.integration.entity.CreatPayment;
 import com.stripe.integration.entity.CustomerData;
-import com.stripe.integration.entity.PaymentResponse;
 import com.stripe.integration.repository.CustomerRepo;
 import com.stripe.integration.service.StripeService;
 import com.stripe.model.*;
-import com.stripe.net.RequestOptions;
 import com.stripe.param.CustomerCreateParams;
-import com.stripe.param.PaymentIntentCreateParams;
-import com.stripe.param.ProductCreateParams;
-import com.stripe.param.SubscriptionCreateParams;
-import com.stripe.param.checkout.SessionCreateParams;
-import org.apache.catalina.connector.Request;
-import org.apache.catalina.connector.Response;
-import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -110,5 +99,27 @@ public class StripeControllerApi {
         return null;
     }
 
+    @RequestMapping("/create_product")
+    public Product createProduct(@RequestBody ProductData productData) throws StripeException
+    {
+        Stripe.apiKey = stripeKey;
 
+        return stripeService.createProduct(productData);
+    }
+
+    @RequestMapping("/create_price")
+    public Price createPrice(@RequestBody PriceData priceData) throws StripeException
+    {
+        Stripe.apiKey = stripeKey;
+
+        return stripeService.createPrice(priceData);
+    }
+
+    @RequestMapping("/create_price_yearly")
+    public Price createPriceYearly(@RequestBody PriceData priceData) throws StripeException
+    {
+        Stripe.apiKey = stripeKey;
+
+        return stripeService.createPriceYearly(priceData);
+    }
 }
