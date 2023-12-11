@@ -1,23 +1,27 @@
 package com.stripe.integration.service;
 
 import com.stripe.Stripe;
+import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
 import com.stripe.integration.dto.*;
 import com.stripe.integration.entity.CustomerData;
+import com.stripe.integration.entity.PriceData;
+import com.stripe.integration.entity.ProductData;
+import com.stripe.integration.entity.SubscriptionData;
 import com.stripe.integration.repository.CustomerRepo;
+import com.stripe.integration.repository.PriceRepo;
 import com.stripe.integration.repository.ProductRepo;
+import com.stripe.integration.repository.SubscriptionDataRepo;
 import com.stripe.model.*;
-import com.stripe.param.PriceCreateParams;
-import com.stripe.param.ProductCreateParams;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.*;
+import com.stripe.param.checkout.SessionCreateParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Service
@@ -33,6 +37,12 @@ public class StripeService {
     @Autowired
     ProductRepo productRepo;
 
+    @Autowired
+    PriceRepo priceRepo;
+
+    @Autowired
+    SubscriptionDataRepo subscriptionDataRepo;
+
     private Stripe stripe;
 
     @PostConstruct
@@ -40,9 +50,17 @@ public class StripeService {
         stripe.apiKey = stripeKey;
     }
 
-    public CustomerData createCustomer(CustomerData customer) {
-        return customerRepo.save(customer);
+    public CustomerData createCustomer(CustomerData customerData) throws StripeException {
+        CustomerCreateParams params =
+                CustomerCreateParams.builder()
+                        .setName(customerData.getName())
+                        .setEmail(customerData.getEmail())
+                        .build();
+        Customer customer = Customer.create(params);
+        customerData.setCustomerId(customer.getId());
+        return customerRepo.save(customerData);
     }
+
 
     public StripeTokenDto createCardToken(StripeTokenDto model) {
         Stripe.apiKey = stripeKey;
@@ -93,108 +111,20 @@ public class StripeService {
         }
     }
 
+    public Product createProduct(ProductData productData) throws StripeException {
 
-    public StripeSubscriptionResponse createSubscription(StripeSubscriptionDto subscriptionDto){
-        PaymentMethod paymentMethod = createPaymentMethod(subscriptionDto);
-        Customer customer = createCustomer(paymentMethod, subscriptionDto);
-        paymentMethod = attachCustomerToPaymentMethod(customer, paymentMethod);
-        Subscription subscription = createSubscription(subscriptionDto, paymentMethod, customer);
-        return createResponse(subscriptionDto,paymentMethod,customer,subscription);
+        ProductCreateParams params =
+                ProductCreateParams.builder()
+                        .setName(productData.getProductName())
+                        .build();
+        Product product = Product.create(params);
+        productData.setProductId(product.getId());
+        productRepo.save(productData);
+        return product;
     }
 
 
-    private StripeSubscriptionResponse createResponse(StripeSubscriptionDto subscriptionDto, PaymentMethod paymentMethod, Customer customer, Subscription subscription) {
-        StripeSubscriptionResponse response = new StripeSubscriptionResponse(subscriptionDto, paymentMethod, customer, subscription);
-        return response;
-    }
-
-
-    private PaymentMethod createPaymentMethod(StripeSubscriptionDto subscriptionDto){
-        try {
-            Map<String, Object> card = new HashMap<>();
-            card.put("number", subscriptionDto.getCardNumber());
-            card.put("exp_month", Integer.parseInt(subscriptionDto.getExpMonth()));
-            card.put("exp_year", Integer.parseInt(subscriptionDto.getExpYear()));
-            card.put("cvc", subscriptionDto.getCvc());
-            Map<String, Object> params = new HashMap<>();
-            params.put("type", "card");
-            params.put("card", card);
-            return PaymentMethod.create(params);
-        } catch (StripeException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
-    private Customer createCustomer(PaymentMethod paymentMethod,StripeSubscriptionDto subscriptionDto){
-        try {
-            Map<String, Object> customerMap = new HashMap<>();
-            customerMap.put("name", subscriptionDto.getUsername());
-            customerMap.put("email", subscriptionDto.getEmail());
-            customerMap.put("payment_method", paymentMethod.getId());
-            return Customer.create(customerMap);
-        } catch (StripeException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-
-    }
-
-    private PaymentMethod attachCustomerToPaymentMethod(Customer customer,PaymentMethod paymentMethod){
-        try {
-            paymentMethod = com.stripe.model.PaymentMethod.retrieve(paymentMethod.getId());
-            Map<String, Object> params = new HashMap<>();
-            params.put("customer", customer.getId());
-            paymentMethod = paymentMethod.attach(params);
-            return paymentMethod;
-        } catch (StripeException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
-    private Subscription createSubscription(StripeSubscriptionDto subscriptionDto,PaymentMethod paymentMethod,Customer customer){
-        try {
-
-            List<Object> items = new ArrayList<>();
-            Map<String, Object> item1 = new HashMap<>();
-            item1.put(
-                    "price",
-                    subscriptionDto.getPriceId()
-            );
-            item1.put("quantity",subscriptionDto.getNumberOfLicense());
-            items.add(item1);
-
-            Map<String, Object> params = new HashMap<>();
-            params.put("customer", customer.getId());
-            params.put("default_payment_method", paymentMethod.getId());
-            params.put("items", items);
-            return Subscription.create(params);
-        } catch (StripeException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
-    public  Subscription cancelSubscription(String subscriptionId){
-
-        try {
-            Subscription retrieve = Subscription.retrieve(subscriptionId);
-            return retrieve.cancel();
-        } catch (StripeException e) {
-
-        }
-        return null;
-    }
-
-        public Product createProduct(ProductData productData) throws StripeException{
-
-            ProductCreateParams params =
-                    ProductCreateParams.builder()
-                            .setName(productData.getProductName())
-                            .build();
-            Product product = Product.create(params);
-            return product;
-        }
-
-
-    public  Price  createPrice(PriceData priceData) throws StripeException {
+    public Price createPrice(PriceData priceData) throws StripeException {
         PriceCreateParams params =
                 PriceCreateParams.builder()
                         .setProduct(priceData.getProductId())
@@ -206,25 +136,168 @@ public class StripeService {
                                         .build()
                         )
                         .build();
-
         Price price = Price.create(params);
+        priceData.setProductId(price.getId());
+        priceRepo.save(priceData);
         return price;
     }
-    public  Price  createPriceYearly(PriceData priceData) throws StripeException {
-        PriceCreateParams params =
-                PriceCreateParams.builder()
-                        .setProduct(priceData.getProductId())
-                        .setUnitAmount(priceData.getUnitAmount())
-                        .setCurrency(priceData.getCurrency())
-                        .setRecurring(
-                                PriceCreateParams.Recurring.builder()
-                                        .setInterval(PriceCreateParams.Recurring.Interval.YEAR)
-                                        .build()
-                        )
+
+    public Price createPriceYearly(PriceData priceData) throws StripeException {
+        try {
+            if (priceData.getProductId() == null || priceData.getProductId().isEmpty()) {
+                throw new IllegalArgumentException("Product ID cannot be null or empty");
+            }
+            PriceCreateParams params =
+                    PriceCreateParams.builder()
+                            .setProduct(priceData.getProductId())
+                            .setUnitAmount(priceData.getUnitAmount())
+                            .setCurrency(priceData.getCurrency())
+                            .setRecurring(
+                                    PriceCreateParams.Recurring.builder()
+                                            .setInterval(PriceCreateParams.Recurring.Interval.YEAR)
+                                            .build()
+                            )
+                            .build();
+
+            Price price = Price.create(params);
+            priceData.setProductId(price.getId());
+            priceRepo.save(priceData);
+            return price;
+        } catch (StripeException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    public List<PaymentMethod> getPaymentMethodsForCustomer(String customerId) throws StripeException {
+        PaymentMethodListParams params = PaymentMethodListParams.builder()
+                .setCustomer(customerId)
+                .setType(PaymentMethodListParams.Type.CARD)
+                .build();
+        PaymentMethodCollection paymentMethodCollection = PaymentMethod.list(params);
+        System.out.println("payment method data------"  +paymentMethodCollection);
+        return paymentMethodCollection.getData();
+    }
+
+    public void attachPaymentMethodToCustomer(String customerId, String paymentMethodId) {
+        try {
+            PaymentMethod paymentMethod = PaymentMethod.retrieve(paymentMethodId);
+            PaymentMethodAttachParams params = PaymentMethodAttachParams.builder()
+                    .setCustomer(customerId)
+                    .build();
+            paymentMethod.attach(params);
+            System.out.println("Payment method attached successfully to customer: " + customerId);
+        } catch (StripeException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setDefaultPaymentMethod(String customerId, String paymentMethodId) {
+        try {
+            Customer customer = Customer.retrieve(customerId);
+            CustomerUpdateParams params = CustomerUpdateParams.builder()
+                    .setInvoiceSettings(CustomerUpdateParams.InvoiceSettings.builder()
+                            .setDefaultPaymentMethod(paymentMethodId)
+                            .build())
+                    .build();
+            customer.update(params);
+            System.out.println("Default payment method set successfully for customer: " + customerId);
+        } catch (StripeException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void createPaymentMethod() throws StripeException {
+        PaymentMethodListParams params =
+                PaymentMethodListParams.builder()
+                        .setCustomer("{{CUSTOMER_ID}}")
+                        .setType(PaymentMethodListParams.Type.CARD)
                         .build();
-
-        Price price = Price.create(params);
-        return price;
+        PaymentMethodCollection paymentMethods = PaymentMethod.list(params);
     }
 
+    public  void createOffsessionPyment() throws  StripeException{
+        PaymentIntentCreateParams params =
+                PaymentIntentCreateParams.builder()
+                        .setCurrency("inr")
+                        .setAmount(1099L)
+                        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+                        .setAutomaticPaymentMethods(
+                                PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build()
+                        )
+                        .setCustomer("{{CUSTOMER_ID}}")
+                        .setPaymentMethod("{{PAYMENT_METHOD_ID}}")
+                        .setReturnUrl("https://example.com/order/123/complete")
+                        .setConfirm(true)
+                        .setOffSession(true)
+                        .build();
+        try {
+            PaymentIntent.create(params);
+        } catch (CardException e) {
+            // Error code will be authentication_required if authentication is needed
+            System.out.println("Error code is : " + e.getCode());
+            String paymentIntentId = e.getStripeError().getPaymentIntent().getId();
+            PaymentIntent paymentIntent = PaymentIntent.retrieve(paymentIntentId);
+            System.out.println(paymentIntent.getId());
+        }
     }
+    public String subscribe() throws StripeException {
+
+        SubscriptionCreateParams.PaymentSettings paymentSettings = SubscriptionCreateParams.PaymentSettings
+                .builder()
+               .build();
+
+        // Build subscription creation parameters
+        SubscriptionCreateParams subCreateParams = SubscriptionCreateParams
+                .builder()
+                .setCustomer("cus_PASCDmKvzI4MZ0")
+                .addItem(
+                        SubscriptionCreateParams.Item.builder()
+                                .setPrice("price_1OKwmvSHoSEFFcLa8ykQcxHQ")
+                                .build()
+                )
+                .setPaymentSettings(paymentSettings)
+                .setPaymentBehavior(SubscriptionCreateParams.PaymentBehavior.DEFAULT_INCOMPLETE)
+                .addAllExpand(Arrays.asList("latest_invoice.payment_intent", "pending_setup_intent"))
+                .build();
+
+        // Create the subscription
+        Subscription subscription = Subscription.create(subCreateParams);
+
+        // Prepare the response data
+        Map<String, Object> responseData = new HashMap<>();
+
+        if (subscription.getPendingSetupIntentObject() != null) {
+            // If there is a pending setup intent, treat it as a setup
+            responseData.put("type", "setup");
+            responseData.put("clientSecret", subscription.getPendingSetupIntentObject().getClientSecret());
+        } else {
+            // If there is no pending setup intent, treat it as a payment
+            responseData.put("type", "payment");
+            responseData.put("clientSecret", subscription.getLatestInvoiceObject().getPaymentIntentObject().getClientSecret());
+        }
+
+        // Convert the response data to JSON and return it
+        return StripeObject.PRETTY_PRINT_GSON.toJson(responseData);
+    }
+
+public void createSession() throws StripeException{
+    SessionCreateParams params = new SessionCreateParams.Builder()
+            .setSuccessUrl("https://example.com/success.html?session_id={CHECKOUT_SESSION_ID}")
+            .setCancelUrl("https://example.com/canceled.html")
+            .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
+            .addLineItem(new SessionCreateParams.LineItem.Builder()
+                    // For metered billing, do not pass quantity
+                    .setQuantity(1L)
+                    .setPrice("price_1OM7jeSHoSEFFcLaZcZChJqS")
+                    .build()
+            )
+            .build();
+
+    Session session = Session.create(params);
+}
+
+}

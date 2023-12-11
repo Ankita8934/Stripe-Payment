@@ -1,4 +1,4 @@
-package com.stripe.integration.entity;
+package com.stripe.integration.dto;
 import com.sun.istack.NotNull;
 import lombok.Data;
 
@@ -10,8 +10,6 @@ public class CreatPayment {
     @NotNull
     private Integer amount;
 
-    @NotNull
-    private String featureRequest;
 
     public Integer getAmount() {
         return amount;
@@ -21,11 +19,4 @@ public class CreatPayment {
         this.amount = amount;
     }
 
-    public String getFeatureRequest() {
-        return featureRequest;
-    }
-
-    public void setFeatureRequest(String featureRequest) {
-        this.featureRequest = featureRequest;
-    }
 }

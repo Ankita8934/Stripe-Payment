@@ -1,37 +1,264 @@
 <html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="utf-8" />
-    <title>Accept a card payment</title>
-    <meta name="description" content="A demo of a card payment on Stripe" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <link rel="stylesheet" href="global.css" />
-    <script src="client.js" defer></script>
+    <title>Checkout</title>
+    <script src="https://js.stripe.com/v3/"></script>
 </head>
-
 <body>
-<!-- Display a payment form -->
-<div class="container">
-    <div class="form-card">
-        <form id="payment-form" th:action="@{/checkoutp}" th:object="${checkoutForm}" method="post">
-            <p><b>Payment details for a product</b></p>
-            <div class="form-control">
-                <input type="text" th:field="*{email}" placeholder="Email address" required />
-                <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" style="color: red;"></p>
-            </div>
-            <div class="form-control">
-                <input type="text" th:field="*{amount}" placeholder="Amount" required />
-                <p th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}" style="color: red;"></p>
-            </div>
-            <div class="form-control">
-                <input type="text" th:field="*{featureRequest}" placeholder="Feature Request" required />
-                <p th:if="${#fields.hasErrors('featureRequest')}" th:errors="*{featureRequest}" style="color: red;"></p>
-            </div>
-            <p><input type="submit" class="btn btn-primary"></p>
-        </form>
-
+<form id="payment-form">
+    <div id="payment-element">
     </div>
-
-</div>
+    <button id="submit">Submit</button>
+    <div id="error-message">
+    </div>
+</form>
 </body>
+<script>
+    const stripe = Stripe('pk_test_51OHKNOSHoSEFFcLagkz7vMk5DwCV12CYDcjsuobrYz5qt7GuGHomRo9u4eav7dGPB2Wmv6rYE1FD4r00ssRu1Yex00pt9kla5R');
+    const options = {
+        mode: 'setup',
+        currency: 'usd',
+        appearance: {/*...*/},
+    };
+    const elements = stripe.elements(options);
+    const paymentElement = elements.create('payment');
+    paymentElement.mount('#payment-element');
+
+</script>
+<script>
+    const form = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('submit');
+
+    const handleError = (error) => {
+        const messageContainer = document.querySelector('#error-message');
+        messageContainer.textContent = error.message;
+        submitBtn.disabled = false;
+    }
+
+    form.addEventListener('submit', async (event) => {
+        // We don't want to let default form submission happen here,
+        // which would refresh the page.
+        event.preventDefault();
+
+        // Prevent multiple form submissions
+        if (submitBtn.disabled) {
+            return;
+        }
+
+        // Disable form submission while loading
+        submitBtn.disabled = true;
+
+        // Trigger form validation and wallet collection
+        const {error: submitError} = await elements.submit();
+        if (submitError) {
+            handleError(submitError);
+            return;
+        }
+        const res = await fetch("/create-intent", {
+            method: "POST",
+        });
+
+        const {client_secret: clientSecret} = await res.json();
+
+        // Confirm the SetupIntent using the details collected by the Payment Element
+        const {error} = await stripe.confirmSetup({
+            elements,
+            clientSecret,
+            confirmParams: {
+                return_url: 'https://example.com/order/123/complete',
+            },
+        });
+
+        if (error) {
+            // This point is only reached if there's an immediate error when
+            // confirming the setup. Show the error to your customer (for example, payment details incomplete)
+            handleError(error);
+        } else {
+            // Your customer is redirected to your `return_url`. For some payment
+            // methods like iDEAL, your customer is redirected to an intermediate
+            // site first to authorize the payment, then redirected to the `return_url`.
+        }
+    });
+
+</script>
+
+<script>
+    const form = document.getElementById('payment-form');
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const {error} = await stripe.confirmPayment({
+            // The client secret of the PaymentIntent
+            clientSecret,
+            confirmParams: {
+                return_url: 'https://example.com/order/123/complete',
+            },
+        });
+
+        if (error) {
+            // This point will only be reached if there is an immediate error when
+            // confirming the payment. Show error to your customer (for example, payment
+            // details incomplete)
+            const messageContainer = document.querySelector('#error-message');
+            messageContainer.textContent = error.message;
+        } else {
+            // Your customer will be redirected to your `return_url`. For some payment
+            // methods like iDEAL, your customer will be redirected to an intermediate
+            // site first to authorize the payment, then redirected to the `return_url`.
+        }
+    });
+    const form = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('submit');
+
+    const handleError = (error) => {
+        const messageContainer = document.querySelector('#error-message');
+        messageContainer.textContent = error.message;
+        submitBtn.disabled = false;
+    }
+
+    form.addEventListener('submit', async (event) => {
+        // We don't want to let default form submission happen here,
+        // which would refresh the page.
+        event.preventDefault();
+
+        // Prevent multiple form submissions
+        if (submitBtn.disabled) {
+            return;
+        }
+
+        // Disable form submission while loading
+        submitBtn.disabled = true;
+
+        // Trigger form validation and wallet collection
+        const {error: submitError} = await elements.submit();
+        if (submitError) {
+            handleError(submitError);
+            return;
+        }
+
+        const res = await fetch("/create-intent", {
+            method: "POST",
+        });
+
+        const {client_secret: clientSecret} = await res.json();
+
+        // Confirm the SetupIntent using the details collected by the Payment Element
+        const {error} = await stripe.confirmSetup({
+            elements,
+            clientSecret,
+            confirmParams: {
+                return_url: 'http://localhost:8093/addCustomer',
+            },
+        });
+
+        if (error) {
+            // This point is only reached if there's an immediate error when
+            // confirming the setup. Show the error to your customer (for example, payment details incomplete)
+            handleError(error);
+        } else {
+            // Your customer is redirected to your `return_url`. For some payment
+            // methods like iDEAL, your customer is redirected to an intermediate
+            // site first to authorize the payment, then redirected to the `return_url`.
+        }
+    });
+
+    const form = document.getElementById('payment-form');
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const {error} = await stripe.confirmPayment({
+            // The client secret of the PaymentIntent
+            clientSecret,
+            confirmParams: {
+                return_url: 'https://example.com/order/123/complete',
+            },
+        });
+
+        if (error) {
+            // This point will only be reached if there is an immediate error when
+            // confirming the payment. Show error to your customer (for example, payment
+            // details incomplete)
+            const messageContainer = document.querySelector('#error-message');
+            messageContainer.textContent = error.message;
+        } else {
+            // Your customer will be redirected to your `return_url`. For some payment
+            // methods like iDEAL, your customer will be redirected to an intermediate
+            // site first to authorize the payment, then redirected to the `return_url`.
+        }
+    });
+
+    const options = {
+        mode: 'subscription',
+        amount: 1099,
+        currency: 'usd',
+        // Fully customizable with appearance API.
+        appearance: {/*...*/},
+    };
+
+    // Set up Stripe.js and Elements to use in checkout form
+    const elements = stripe.elements(options);
+
+    // Create and mount the Payment Element
+    const paymentElement = elements.create('payment');
+    paymentElement.mount('#payment-element');
+
+    const form = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('submit');
+
+    const handleError = (error) => {
+        const messageContainer = document.querySelector('#error-message');
+        messageContainer.textContent = error.message;
+        submitBtn.disabled = false;
+    }
+
+    form.addEventListener('submit', async (event) => {
+        // We don't want to let default form submission happen here,
+        // which would refresh the page.
+        event.preventDefault();
+
+        // Prevent multiple form submissions
+        if (submitBtn.disabled) {
+            return;
+        }
+
+        // Disable form submission while loading
+        submitBtn.disabled = true;
+
+        // Trigger form validation and wallet collection
+        const {error: submitError} = await elements.submit();
+        if (submitError) {
+            handleError(submitError);
+            return;
+        }
+
+        // Create the subscription
+        const res = await fetch('/create-subscription', {
+            method: "POST",
+        });
+        const {type, clientSecret} = await res.json();
+        const confirmIntent = type === "setup" ? stripe.confirmSetup : stripe.confirmPayment;
+
+        // Confirm the Intent using the details collected by the Payment Element
+        const {error} = await confirmIntent({
+            elements,
+            clientSecret,
+            confirmParams: {
+                return_url: 'https://example.com/order/123/complete',
+            },
+        });
+
+        if (error) {
+            // This point is only reached if there's an immediate error when confirming the Intent.
+            // Show the error to your customer (for example, "payment details incomplete").
+            handleError(error);
+        } else {
+            // Your customer is redirected to your `return_url`. For some payment
+            // methods like iDEAL, your customer is redirected to an intermediate
+            // site first to authorize the payment, then redirected to the `return_url`.
+        }
+    });
+
+
+</script>
 </html>

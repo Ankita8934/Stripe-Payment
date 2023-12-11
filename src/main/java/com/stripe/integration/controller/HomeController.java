@@ -2,20 +2,17 @@ package com.stripe.integration.controller;
 
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
-import com.stripe.integration.entity.CheckoutForm;
+import com.stripe.integration.dto.CheckoutForm;
 import com.stripe.integration.entity.CustomerData;
 import com.stripe.integration.service.StripeService;
 import com.stripe.model.Customer;
 import com.stripe.model.CustomerCollection;
-import com.stripe.param.CustomerCreateParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,9 +36,13 @@ public class HomeController {
         return "home";
     }
 
+    @GetMapping("/register")
+    public String regictercustomer(){
+        return "register";
+    }
+
     @GetMapping("/checkout")
-    public String home(Model model){
-        model.addAttribute("checkoutForm",new CheckoutForm());
+    public String checkout(){
         return "checkout";
     }
 
@@ -80,17 +81,8 @@ public class HomeController {
 
     @RequestMapping("/addCustomer")
     public String addCustomer(CustomerData customerData) throws StripeException {
-
         Stripe.apiKey = stripeKey;
-        CustomerCreateParams params =
-                CustomerCreateParams.builder()
-                        .setName(customerData.getName())
-                        .setEmail(customerData.getEmail())
-                        .build();
-        Customer customer = Customer.create(params);
-        customerData.setCustomerId(customer.getId());
-         stripeService.createCustomer(customerData);
-
+        stripeService.createCustomer(customerData);
         return "success";
     }
 

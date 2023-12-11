@@ -10,8 +10,7 @@ public class CustomerData {
 
     public String name;
     public String email;
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     public String customerId;
 
     public String source;
@@ -19,6 +18,10 @@ public class CustomerData {
     public String currency;
     public String description;
     public String productId;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     public String getName() {
         return name;
@@ -43,4 +46,5 @@ public class CustomerData {
     public void setCustomerId(String customerId) {
         this.customerId = customerId;
     }
+
 }

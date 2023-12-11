@@ -5,20 +5,23 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.integration.dto.*;
 import com.stripe.integration.entity.CustomerData;
+import com.stripe.integration.entity.PriceData;
+import com.stripe.integration.entity.ProductData;
+import com.stripe.integration.entity.SubscriptionData;
 import com.stripe.integration.repository.CustomerRepo;
 import com.stripe.integration.service.StripeService;
 import com.stripe.model.*;
 import com.stripe.param.CustomerCreateParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Objects.nonNull;
 
 @RestController
 public class StripeControllerApi {
@@ -79,31 +82,11 @@ public class StripeControllerApi {
         return stripeService.charge(model);
     }
 
-    @PostMapping("/customer/subscription")
-    @ResponseBody
-    public StripeSubscriptionResponse subscription(@RequestBody StripeSubscriptionDto model) {
-
-        return stripeService.createSubscription(model);
-    }
-
-    @DeleteMapping("/subscription/{id}")
-    @ResponseBody
-    public SubscriptionCancelRecord cancelSubscription(@PathVariable String id){
-
-        Subscription subscription = stripeService.cancelSubscription(id);
-        if(nonNull(subscription)){
-
-            return new SubscriptionCancelRecord(subscription.getStatus());
-        }
-
-        return null;
-    }
 
     @RequestMapping("/create_product")
     public Product createProduct(@RequestBody ProductData productData) throws StripeException
     {
         Stripe.apiKey = stripeKey;
-
         return stripeService.createProduct(productData);
     }
 
@@ -122,4 +105,40 @@ public class StripeControllerApi {
 
         return stripeService.createPriceYearly(priceData);
     }
+
+    @RequestMapping("/create-subscription")
+    public String subscriptionCreation() throws StripeException{
+        Stripe.apiKey = stripeKey;
+        return stripeService.subscribe();
+    }
+
+    @RequestMapping("/default")
+    public List<PaymentMethod> getPaymentDefaultMethodsForCustomer(@RequestParam String customerId) throws StripeException {
+        Stripe.apiKey = stripeKey;
+        return stripeService.getPaymentMethodsForCustomer(customerId);
+    }
+
+    @RequestMapping("/attachPaymentMethodToCustomer")
+    public void attachPaymentMethodToCustomer(@RequestParam String customerId,@RequestParam String paymentMethodId) throws StripeException {
+        Stripe.apiKey = stripeKey;
+        stripeService.attachPaymentMethodToCustomer(customerId,paymentMethodId);
+    }
+
+    @RequestMapping("/setDefaultPaymentMethod")
+    public void setDefaultPaymentMethod(@RequestParam String customerId,@RequestParam String paymentMethodId) {
+        Stripe.apiKey = stripeKey;
+        stripeService.setDefaultPaymentMethod(customerId,paymentMethodId);
+    }
+
+
+    @RequestMapping("/repayment")
+    public void PaymentMethod() throws StripeException {
+           Stripe.apiKey = stripeKey;
+            stripeService.createPaymentMethod();
+    }
+    public  void createOffSessionPayment() throws  StripeException{
+        Stripe.apiKey = stripeKey;
+        stripeService.createOffsessionPyment();
+    }
 }
+

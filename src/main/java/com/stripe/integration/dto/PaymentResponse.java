@@ -1,4 +1,4 @@
-package com.stripe.integration.entity;
+package com.stripe.integration.dto;
 
 import lombok.Data;
 

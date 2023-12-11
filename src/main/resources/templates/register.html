@@ -1,0 +1,35 @@
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Checkout</title>
+    <script src="https://js.stripe.com/v3/">
+    </script>
+</head>
+
+<body>
+<form id="signup-form">
+    <label>
+        Email
+        <input id="email" type="text" placeholder="Email address" value="test@example.com" required />
+    </label>
+    <button type="submit">
+        Register
+    </button>
+</form>
+</body>
+<script>
+    const emailInput = document.querySelector('#email');
+
+    fetch('/create-customer', {
+        method: 'post',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            email: emailInput.value,
+        }),
+    }).then(r => r.json());
+
+
+
+</script>
+</html>
