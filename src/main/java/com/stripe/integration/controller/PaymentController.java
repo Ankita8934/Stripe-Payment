@@ -5,13 +5,19 @@ import com.stripe.Stripe;
 import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
 import com.stripe.integration.dto.CreatPayment;
+import com.stripe.integration.entity.PriceData;
+import com.stripe.integration.service.PaymentService;
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.PaymentLink;
+import com.stripe.model.Price;
+import com.stripe.model.checkout.Session;
 import com.stripe.param.PaymentIntentCreateParams;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import spark.Request;
+import spark.Response;
 
 import javax.validation.Valid;
 
@@ -21,8 +27,11 @@ public class PaymentController {
     @Value("${stripe.key.secret}")
     String stripeKey;
 
+    @Autowired
+    PaymentService paymentService;
+
     @PostMapping("/create-payment-intent")
-    public  CreatPayment createPaymentIntent(@RequestBody @Valid CreatPayment creatPayment) throws StripeException, StripeException {
+    public CreatPayment createPaymentIntent(@RequestBody @Valid CreatPayment creatPayment) throws StripeException, StripeException {
         Stripe.apiKey = stripeKey;
         PaymentIntentCreateParams params =
                 PaymentIntentCreateParams.builder()
@@ -49,4 +58,278 @@ public class PaymentController {
         }
         return creatPayment;
     }
+
+    @RequestMapping("paymentLink")
+    public PaymentLink paymentLink() throws StripeException {
+        Stripe.apiKey = stripeKey;
+        return paymentService.paymentLink();
+    }
+
+    @RequestMapping("/create_price1")
+    public Price createPrice(@RequestBody PriceData priceData) throws StripeException {
+        Stripe.apiKey = stripeKey;
+        return paymentService.createPrice(priceData);
+    }
+
+    @RequestMapping("/paymentStatic_amount")
+    public ResponseEntity<?> paymentStatic(@RequestParam Long amount) throws StripeException {
+        Stripe.apiKey = stripeKey;
+        return ResponseEntity.ok(paymentService.paymentStaticAmount(amount));
+    }
+
+    @PostMapping("/")
+    public Object handle(Request request, Response response) {
+        Stripe.apiKey = stripeKey;
+        return  paymentService.handle(request,response);
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

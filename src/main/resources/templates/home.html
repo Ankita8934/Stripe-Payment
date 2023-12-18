@@ -4,6 +4,10 @@
 
 <head>
     <title>Layout</title>
+    <script
+            async
+            src="https://js.stripe.com/v3/buy-button.js">
+    </script>
 </head>
 <body class="bg-light pt-5">
 
@@ -22,7 +26,11 @@
                 </a>
             </p>
 
+            <button id="payNowButton">Pay </button>
 
+            <input type="number" id="myInput" value="24444" >
+
+            <button id="payButton">Pay Static</button>
 
             <p class="mt-5 text-muted" >
                     <small>Project by  <a th:href="@{https://github.com/Ankita8934}" target="_blank">Ankita Singh</a>.</small>
@@ -31,6 +39,60 @@
         </div>
     </div>
 </section>
-
 </body>
+<script>
+    document.getElementById('payNowButton').addEventListener('click', async function() {
+        try {
+            // Make a request to your backend API
+
+            const response = await fetch('/paymentLink', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // Add any additional payload if needed
+                body: JSON.stringify({
+                }),
+            });
+
+            // Parse the response JSON
+            const data = await response.json();
+
+            // Open the Payment Link URL in a new window or redirect the user
+            window.open(data.url, '_blank');
+        } catch (error) {
+            console.error('Error initiating payment:', error);
+        }
+    });
+
+    document.getElementById('payButton').addEventListener('click', async function() {
+        try {
+            // Make a request to your backend API
+            var amount = document.querySelector("#myInput").value;
+            console.log(amount);
+
+            const response = await fetch('/paymentStatic_amount?amount=' + amount, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // Add any additional payload if needed
+                body: JSON.stringify({
+                    amount:amount
+                }),
+            });
+
+            // Parse the response JSON
+            const data = await response.json();
+
+            // Open the Payment Link URL in a new window or redirect the user
+            window.open(data.url, '_blank');
+        } catch (error) {
+            console.error('Error initiating payment:', error);
+        }
+    });
+
+
+</script>
+</script>
 </html>

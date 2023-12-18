@@ -90,7 +90,7 @@ public class StripeService {
             chargeRequest.setSuccess(false);
             Map<String, Object> chargeParams = new HashMap<>();
             chargeParams.put("amount", (int) (chargeRequest.getAmount() * 100));
-            chargeParams.put("currency", "USD");
+            chargeParams.put("currency", "eur");
             chargeParams.put("description", "Payment for id " + chargeRequest.getAdditionalInfo().getOrDefault("ID_TAG", ""));
             chargeParams.put("source", chargeRequest.getStripeToken());
             Map<String, Object> metaData = new HashMap<>();
@@ -222,7 +222,7 @@ public class StripeService {
     public  void createOffsessionPyment() throws  StripeException{
         PaymentIntentCreateParams params =
                 PaymentIntentCreateParams.builder()
-                        .setCurrency("inr")
+                        .setCurrency("eur")
                         .setAmount(1099L)
                         // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
                         .setAutomaticPaymentMethods(
@@ -299,5 +299,6 @@ public void createSession() throws StripeException{
 
     Session session = Session.create(params);
 }
+
 
 }
